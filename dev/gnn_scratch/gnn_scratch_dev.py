@@ -10,7 +10,7 @@ Scratch GNN
 import numpy as np
 
 import sys
-sys.path.append('/workspace/github/DL-scratch')
+sys.path.append('/workspace/github/DL-notebook')
 
 from gnn.utils import splittraintest
 from gnn.utils import graphreader
