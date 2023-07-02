@@ -38,6 +38,14 @@ from torch.utils.data import Dataset
 
 import torch
 
+import sys
+sys.path.append('/workspace/github/histocartography')
+
+from histocartography.preprocessing import (
+    VahadaneStainNormalizer         # stain normalizer
+)
+norm_target_path = '/workspace/github/hact-net/data/target.png'
+
 #%% helper functions
 # random cropping patches from images with arbitrary size
 def random_crop(img, target_shape=(256,256),seed=None):
@@ -75,10 +83,10 @@ def make_pathces(img, target_shape=(256,256),num_channels=3):
 
 #%% Train class
 class CoNSeP_Train(Dataset):
-    def __init__(self, train_dir='./consep/CoNSeP/Train'):
+    def __init__(self, train_dir='./consep/CoNSeP/Train',stain_norm=False):
         IMG_HEIGHT = 256
         IMG_WIDTH = 256
-        num_patches = 16
+        num_patches = 16 # FIXME: Improve automatic recognition of PATCH number
         num_random_cropped_patches = 1
         num_augmentations = 3
         total_num_of_patches = (num_patches + num_random_cropped_patches)*num_augmentations
@@ -93,6 +101,8 @@ class CoNSeP_Train(Dataset):
 
         # train set
         index = 0
+        if stain_norm:
+            normalizer = VahadaneStainNormalizer(target_path=norm_target_path) 
         for inx, img_dir in tqdm(enumerate(train_images)):
             # importing images
             full_img_dir = os.path.join(train_dir+'/Images/', img_dir)
@@ -107,6 +117,14 @@ class CoNSeP_Train(Dataset):
                 img = img[:,:,:3]
             else:
                 img = img
+            
+            # stain normalizations
+            if stain_norm:
+                try:
+                    normalizer = VahadaneStainNormalizer(target_path=norm_target_path)
+                    img = normalizer.process(img)
+                except:
+                    pass
             
             # making the image into 16 equal patches
             img_patches = make_pathces(img,target_shape=(IMG_HEIGHT,IMG_WIDTH))
@@ -153,7 +171,7 @@ class CoNSeP_Train(Dataset):
 
 # %% Test class
 class CoNSeP_Test(Dataset):
-    def __init__(self, test_dir='./consep/CoNSeP/Test'):
+    def __init__(self, test_dir='./consep/CoNSeP/Test',stain_norm=False):
         IMG_HEIGHT = 256
         IMG_WIDTH = 256
         num_patches = 16
@@ -169,8 +187,10 @@ class CoNSeP_Test(Dataset):
         X_test = np.zeros((len(test_images)*num_patches,IMG_HEIGHT,IMG_WIDTH,3))
         y_test = np.zeros((len(test_images)*num_patches,IMG_HEIGHT,IMG_WIDTH))
 
+        # test set 
         test_index = 0
-        # test set        
+        if stain_norm:
+            normalizer = VahadaneStainNormalizer(target_path=norm_target_path)       
         for inx, img_dir in tqdm(enumerate(test_images)):
             # importing images
             full_img_dir = os.path.join(test_dir+'/Images/', img_dir)
@@ -185,6 +205,13 @@ class CoNSeP_Test(Dataset):
                 img = img[:,:,:3]
             else:
                 img = img
+            
+            # stain normalization
+            if stain_norm:
+                try:
+                    img = normalizer.process(img)
+                except:
+                    pass
             
             # making the image into 16 equal patches
             img_patches = make_pathces(img,target_shape=(IMG_HEIGHT,IMG_WIDTH))
@@ -211,3 +238,155 @@ class CoNSeP_Test(Dataset):
         img =self.X_test[index]
         mask =  self.y_test[index]
         return img, mask
+
+# %% Inference class
+class CoNSeP_Inference(Dataset):
+    def __init__(self, inference_dir='./consep/CoNSeP/Test',stain_norm=False,
+                IMG_HEIGHT = 512,IMG_WIDTH = 512):
+        num_random_cropped_patches  = 1
+
+        inference_images = sorted(os.listdir(inference_dir + '/Images'))
+        inf_ground_truth = sorted(os.listdir(inference_dir + '/Labels'))
+
+        # creating the new dataset
+        X_inference = np.zeros((len(inference_images),IMG_HEIGHT,IMG_WIDTH,3))
+        y_inference = np.zeros((len(inference_images),IMG_HEIGHT,IMG_WIDTH))
+
+        # test set 
+        inf_index = 0
+        if stain_norm:
+            normalizer = VahadaneStainNormalizer(target_path=norm_target_path)       
+        for inx, img_dir in tqdm(enumerate(inference_images)):
+            # importing images
+            full_img_dir = os.path.join(inference_dir+'/Images/', img_dir)
+            img = plt.imread(full_img_dir)
+
+            # importing mask
+            img_type_map = scpio.loadmat(os.path.join(inference_dir+'/Labels/',inf_ground_truth[inx]))['type_map']
+            
+            # omitting the forth channels of the images
+            if img.shape[2] == 4:
+                img = img[:,:,:3]
+            else:
+                img = img
+            
+            # stain normalization
+            if stain_norm:
+                try:
+                    img = normalizer.process(img)
+                except:
+                    pass
+
+            #add the patches to the dataset
+            for i in range(num_random_cropped_patches):
+                seed = np.random.randint(10000)
+                X_inference[inx] = random_crop(img, target_shape=(IMG_HEIGHT,IMG_WIDTH), seed=seed)
+                y_inference[inx] = random_crop(img_type_map, target_shape=(IMG_HEIGHT,IMG_WIDTH), seed=seed)
+
+        self.X_inference = X_inference
+        self.y_inference = y_inference
+
+    def __len__(self):
+        return len(self.X_inference)
+
+    def __getitem__(self,index):
+        img =self.X_inference[index]
+        mask =  self.y_inference[index]
+        return img, mask
+
+#%% raw inference
+class CoNSeP_Raw_Inf(Dataset):
+    def __init__(self, inference_dir='./consep/CoNSeP/Test',stain_norm=False):
+        IMG_HEIGHT = 1000
+        IMG_WIDTH = 1000
+
+        inference_images = sorted(os.listdir(inference_dir + '/Images'))
+        inf_ground_truth = sorted(os.listdir(inference_dir + '/Labels'))
+
+        # creating the new dataset
+        X_inference = np.zeros((len(inference_images),IMG_HEIGHT,IMG_WIDTH,3))
+        y_inference = np.zeros((len(inference_images),IMG_HEIGHT,IMG_WIDTH))
+
+        # test set 
+        inf_index = 0
+        if stain_norm:
+            normalizer = VahadaneStainNormalizer(target_path=norm_target_path)
+        for inx, img_dir in tqdm(enumerate(inference_images)):
+            # importing images
+            full_img_dir = os.path.join(inference_dir+'/Images/', img_dir)
+            img = plt.imread(full_img_dir)
+
+            # importing mask
+            img_type_map = scpio.loadmat(os.path.join(inference_dir+'/Labels/',inf_ground_truth[inx]))['type_map']
+            
+            # omitting the forth channels of the images
+            if img.shape[2] == 4:
+                img = img[:,:,:3]
+            else:
+                img = img
+            
+            # stain normalization
+            if stain_norm:
+                try:
+                    img = normalizer.process(img)
+                except:
+                    pass
+            
+            X_inference[inx] = img
+            y_inference[inx] = img_type_map
+
+        self.X_inference = X_inference
+        self.y_inference = y_inference
+
+    def __len__(self):
+        return len(self.X_inference)
+
+    def __getitem__(self,index):
+        img =self.X_inference[index]
+        mask =  self.y_inference[index]
+        return img, mask
+
+
+#%% inference on BRCA-M2C
+class BRCAM2C_Inference(Dataset):
+    def __init__(self, inference_dir='/workspace/github/Dataset-BRCA-M2C/images',stain_norm=False):
+        IMG_HEIGHT = 256
+        IMG_WIDTH = 256
+        num_random_cropped_patches  = 1
+        num_patches = 4
+        n = round(np.sqrt(num_patches))
+
+        inference_images = sorted(os.listdir(inference_dir + '/'))
+
+        # creating the new dataset
+        X_inference = np.zeros((len(inference_images)*num_patches,IMG_HEIGHT,IMG_WIDTH,3))
+
+        # inference set 
+        index = 0
+        if stain_norm:
+            normalizer = VahadaneStainNormalizer(target_path=norm_target_path)
+        for inx, img_dir in tqdm(enumerate(inference_images)):
+            # importing images
+            full_img_dir = os.path.join(inference_dir+'/', img_dir)
+            img = plt.imread(full_img_dir)
+
+             # stain normalization
+            if stain_norm:
+                try:
+                    img = normalizer.process(img)
+                except:
+                    pass
+
+            img_patches = make_pathces(img,target_shape=(IMG_HEIGHT,IMG_WIDTH))
+            for i in range(n):
+                for j in range(n):
+                    X_inference[index] = img_patches[i][j]
+                    index += 1
+        self.X_inference = X_inference
+
+    def __len__(self):
+        return len(self.X_inference)
+
+    def __getitem__(self,index):
+        img =self.X_inference[index]
+        return img

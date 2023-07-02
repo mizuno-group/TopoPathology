@@ -17,7 +17,7 @@ import torch.nn as nn
 class encoding_block(nn.Module):
     def __init__(self,in_channels, out_channels):
         super(encoding_block,self).__init__()
-        model = [] # FIXME: former version : model = []
+        model = []
         model.append(nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False))
         model.append(nn.BatchNorm2d(out_channels))
         model.append(nn.ReLU(inplace=True))
@@ -47,7 +47,7 @@ class unet_model(nn.Module):
         self.bottleneck = encoding_block(features[3],features[3]*2)
         self.final_layer = nn.Conv2d(features[0],out_channels,kernel_size=1)
     def forward(self,x):
-        skip_connections = [] # FIXME: former version : skip_connections = []
+        skip_connections = []
         x = self.conv1(x)
         skip_connections.append(x)
         x = self.pool(x)
