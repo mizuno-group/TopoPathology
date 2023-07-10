@@ -295,7 +295,7 @@ class CoNSeP_Inference(Dataset):
         return img, mask
 
 #%% raw inference
-class CoNSeP_Raw_Inf(Dataset):
+class CoNSeP_Raw_Inference(Dataset):
     def __init__(self, inference_dir='./consep/CoNSeP/Test',stain_norm=False):
         IMG_HEIGHT = 1000
         IMG_WIDTH = 1000
