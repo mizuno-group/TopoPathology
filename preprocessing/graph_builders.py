@@ -27,6 +27,7 @@ from skimage.measure import regionprops
 from sklearn.neighbors import kneighbors_graph
 
 from pipelines import PipelineStep
+from preprocessing import cell_feature_extractor as cfe
 
 #%%
 LABEL = "label"
@@ -60,14 +61,19 @@ class BaseGraphBuilder(PipelineStep):
         self.add_loc_feats = add_loc_feats
         super().__init__(**kwargs)
     
-    def _fromjson(self,json_path='/workspace/github/TopoPathology/preprocessing/results/BRACS_291_IC_20_res.json'):
-        with open(json_path) as json_file:
-            data = json.load(json_file)
-
+    def _fromjson(self,json_data=None,json_path='/workspace/github/TopoPathology/preprocessing/results/BRACS_291_IC_20_res.json'):
+        if json_data is None:
+            with open(json_path) as json_file:
+                data = json.load(json_file)
+        else:
+            data = json_data
+    
         # collect node feature and centroids
         features = []
         centroids = np.empty((len(data), 2))
         for i,k in enumerate(data):
+            if  data[k]['node_feature'] is None:
+                raise ValueError('!! node feature is not defined !!')
             node_f = data[k]['node_feature']
             cent = data[k]['centroid']
             features.append(node_f)
@@ -78,11 +84,12 @@ class BaseGraphBuilder(PipelineStep):
 
     def _process(  # type: ignore[override]
         self,
-        instance_map: np.ndarray,
+        instance_map: np.ndarray = None,
         features: torch.Tensor = None,
         centroids: np.ndarray = None,
         annotation: Optional[np.ndarray] = None,
         json_path: Optional[str] = '/workspace/github/TopoPathology/preprocessing/results/BRACS_291_IC_20_res.json',
+        json_data: Optional[dict] = None,
     ) -> dgl.DGLGraph:
         """Generates a graph from a given instance_map and features
         Args:
@@ -94,7 +101,7 @@ class BaseGraphBuilder(PipelineStep):
             dgl.DGLGraph: The constructed graph
         """
         # collect node features and centroids
-        json_features, json_centroids = self._fromjson(json_path)
+        json_features, json_centroids = self._fromjson(json_data=json_data,json_path=json_path)
 
         if features is None:
             features = json_features
