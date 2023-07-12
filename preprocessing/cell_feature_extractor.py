@@ -34,6 +34,35 @@ class CellFeatureExtractor():
         with open(self.json_path) as json_file:
             data = json.load(json_file)
             self.nuc_info = data['nuc']
+    
+    def conduct(self,update_json=True):
+        """Extract morphological features (fast algorithm)
+
+        Args:
+            update_json (bool, optional): Update or not. Defaults to False.
+
+        Returns:
+            ndarray: each node feature. The index corresponds to the cell instance number. 0 indicates the bacground.
+        """
+        n_class = self.feature_map.shape[2]
+        inst_flat = np.reshape(self.inst_map,(-1))
+        feat_flat = np.reshape(self.feature_map,(-1,n_class))
+
+        class_counts = np.bincount(inst_flat)
+        node_feature = []
+        for i in range(n_class):
+            class_f = np.bincount(inst_flat, feat_flat[:,i])/class_counts
+            node_feature.append(class_f)
+        node_feature = np.array(node_feature).T.astype(float) # (cell_number, feature_dim)
+
+        if update_json:
+            cell_number = self.inst_map.max()
+            for cell in range(1,cell_number+1):
+                node_f = node_feature[cell]
+                inst_info = self.nuc_info[str(cell)]
+                inst_info['node_feature'] = list(node_f) # add node feature information
+
+        return node_feature
 
     def single_extractor(self,cell=416,remove_contour=True,do_plot=False):
         """ Extract morphological features
@@ -68,10 +97,11 @@ class CellFeatureExtractor():
         node_feature = area_feature.mean(axis=0).astype(float) # sum of the feature is corrected to 1
         return node_feature
     
-    def conduct(self):
+    def conduct_legacy(self):
+        """slow"""
         cell_number = self.inst_map.max()
         for cell in tqdm(range(1,cell_number+1)):
-            node_feature = self.single_extractor(cell=cell,remove_contour=True,do_plot=False)
+            node_feature = self.single_extractor(cell=cell,remove_contour=False,do_plot=False)
             inst_info = self.nuc_info[str(cell)]
             inst_info['node_feature'] = list(node_feature) # add node feature information
     
