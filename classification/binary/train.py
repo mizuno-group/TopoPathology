@@ -10,19 +10,19 @@ Script for training cell graph classification on BRACS
 import torch
 print(torch.__version__) # 2.0.1
 print(torch.cuda.get_device_name()) # NVIDIA GeForce RTX 3090
-from torch_geometric.data import Data,DataLoader
+from torch_geometric.loader import DataLoader
 import torch.nn as nn
 
 from sklearn.metrics import accuracy_score, f1_score
 
 import sys
-sys.path.append('/workspace/github/TopoPathology')
-from binary_classification import dataloader
-from binary_classification.models import basic_gnn
+sys.path.append('/workspace/home/azuma/github/TopoPathology')
+from classification.binary import dataloader
+from classification.binary.models import basic_gnn
 
 #%% data loader
-train_data = dataloader.collect_data(bin_path='/workspace/Pathology_Graph/230712_cg_classification/results/centroids_based_graph/cell_graphs/train/*.bin')
-val_data = dataloader.collect_data(bin_path='/workspace/Pathology_Graph/230712_cg_classification/results/centroids_based_graph/cell_graphs/val/*.bin')
+train_data = dataloader.collect_data(bin_path='/workspace/mnt/data1/Azuma/Pathology/centroids_based_graph/cell_graphs/train/*.bin')
+val_data = dataloader.collect_data(bin_path='/workspace/mnt/data1/Azuma/Pathology/centroids_based_graph/cell_graphs/val/*.bin')
 #test_data = dataloader.collect_data(bin_path='/workspace/Pathology_Graph/230712_cg_classification/results/centroids_based_graph/cell_graphs/test/*.bin')
 
 #%%

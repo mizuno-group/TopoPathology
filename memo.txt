@@ -1,0 +1,6 @@
+■ torch-scatter
+pip install torch-scatter==2.1.1 -f https://data.pyg.org/whl/torch-2.0.1+cu118.html
+
+Note that the default is cpu only and will show the error message "Not compiled with CUDA support".
+Confirm that the pip list command shows the following; torch-scatter    2.1.1+pt20cu118
+
