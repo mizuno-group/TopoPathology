@@ -9,7 +9,7 @@ GNN model
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_scatter import scatter_max
+from torch_scatter import scatter_mean, scatter_max
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn import GCNConv
 
@@ -31,6 +31,7 @@ class Net(torch.nn.Module):
         
         # 2. Readout layer
         x, _ = scatter_max(x, data.batch, dim=0)
+        #x = scatter_mean(x, data.batch, dim=0)
 
         # 3. Apply a final classifier
         x = self.linear1(x)
