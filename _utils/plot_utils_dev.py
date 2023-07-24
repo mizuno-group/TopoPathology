@@ -31,9 +31,10 @@ def plot_acc(train_res,valid_res):
     plt.show()
 
 # loss
-def plot_loss(loss_res):
+def plot_loss(train_loss,valid_loss):
     fig,ax = plt.subplots()
-    plt.plot(loss_res,label='train')
+    plt.plot(train_loss,label='train')
+    plt.plot(valid_loss,label='valid')
     plt.xlabel("epochs")
     plt.ylabel("Loss")
 

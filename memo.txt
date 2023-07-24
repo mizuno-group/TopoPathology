@@ -4,3 +4,9 @@ pip install torch-scatter==2.1.1 -f https://data.pyg.org/whl/torch-2.0.1+cu118.h
 Note that the default is cpu only and will show the error message "Not compiled with CUDA support".
 Confirm that the pip list command shows the following; torch-scatter    2.1.1+pt20cu118
 
+■ dgl
+pip install  dgl -f https://data.dgl.ai/wheels/cu118/repo.html
+
+Note that the default is cpu only and cannot send to gpu device.
+You are expected to install the cuda by referring to this link; https://www.dgl.ai/pages/start.html
+Confirm that the pip list command shows the following; dgl    1.1.1+cu118
