@@ -19,3 +19,8 @@ def fix_seed(seed:int=None,fix_gpu:bool=False):
     if fix_gpu:
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
+
+def set_graph_on_cuda(graph):
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    cuda_graph = graph.to(device)
+    return cuda_graph
