@@ -27,7 +27,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import logging
-logging.basicConfig(level=logging.INFO,format="%(asctime)s %(name)s %(levelname)7s %(message)s",filename='/workspace/home/azuma/Pathology_Graph/230712_cg_classification/230715_multi_classification/230716_basic_GNN/results/log_texts/230717_prelim.txt', filemode='r')
+logging.basicConfig(level=logging.INFO,format="%(asctime)s %(name)s %(levelname)7s %(message)s",filename='/workspace/home/azuma/Pathology_Graph/230712_cg_classification/230715_multi_classification/230716_basic_GNN/results/log_texts/230717_prelim.txt', filemode='w')
 logger = logging.getLogger(__name__)
 
 #%%

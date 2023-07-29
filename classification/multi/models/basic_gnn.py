@@ -14,9 +14,9 @@ from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn import GCNConv
 
 class Net(torch.nn.Module):
-    def __init__(self,hidden_channels,n_classes):
+    def __init__(self,node_dim,hidden_channels,n_classes):
         super(Net, self).__init__()
-        self.conv1 = GCNConv(6, hidden_channels)
+        self.conv1 = GCNConv(node_dim, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
         self.conv3 = GCNConv(hidden_channels, hidden_channels)
         self.linear1 = torch.nn.Linear(hidden_channels,n_classes)
@@ -37,5 +37,5 @@ class Net(torch.nn.Module):
         x = self.linear1(x)
         return x
 
-model = Net(hidden_channels=64,n_classes=7)
+model = Net(node_dim=6,hidden_channels=64,n_classes=7)
 
