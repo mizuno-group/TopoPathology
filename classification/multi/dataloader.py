@@ -44,7 +44,7 @@ class BRACSDataset(Dataset):
     def __init__(
             self,
             cg_path_list: list = None,
-            tg_path: str = None,
+            tg_path_list: list= None,
             assign_mat_path: str = None,
             load_in_ram: bool = False,
     ):
@@ -59,16 +59,21 @@ class BRACSDataset(Dataset):
         """
         super(BRACSDataset, self).__init__()
 
-        assert not (cg_path_list is None and tg_path is None), "You must provide path to at least 1 modality."
+        assert not (cg_path_list is None and tg_path_list is None), "You must provide path to at least 1 modality."
 
         self.cg_path_list = cg_path_list
-        self.tg_path = tg_path
+        self.tg_path_list = tg_path_list
         self.assign_mat_path = assign_mat_path
         self.load_in_ram = load_in_ram
 
         if cg_path_list is not None:
             self._load_cg()
 
+        if tg_path_list is not None:
+            self._load_tg()
+
+        if assign_mat_path is not None:
+            self._load_assign_mat()
 
     def _load_cg(self):
         """
@@ -84,7 +89,43 @@ class BRACSDataset(Dataset):
             cell_graphs = [load_graphs(fname) for fname in self.cg_fnames]
             self.cell_graphs = [entry[0][0] for entry in cell_graphs]
             self.cell_graph_labels = [entry[1]['label'].item() for entry in cell_graphs]
+    
+    def _load_tg(self):
+        """
+        Load tissue graphs
+        """
+        tg_fnames = []
+        for p in self.tg_path_list:
+            tg_fnames.extend(list(glob(os.path.join(p, '*.bin'))))
+        # grade selection # FIXME: binary classification
+        final_tg_fnames = [] 
+        for t in tg_fnames:
+            if '_N_' in t:
+                final_tg_fnames.append(t)
+            elif '_IC_' in t:
+                final_tg_fnames.append(t)
+            else:
+                pass
+        self.tg_fnames = sorted(final_tg_fnames)
 
+        self.num_tg = len(self.tg_fnames)
+        if self.load_in_ram:
+            tissue_graphs = [load_graphs(fname) for fname in self.tg_fnames]
+            self.tissue_graphs = [entry[0][0] for entry in tissue_graphs]
+            self.tissue_graph_labels = [entry[1]['label'].item() for entry in tissue_graphs]
+
+    def _load_assign_mat(self):
+        """
+        Load assignment matrices 
+        """
+        self.assign_fnames = glob(os.path.join(self.assign_mat_path, '*.h5'))
+        self.assign_fnames.sort()
+        self.num_assign_mat = len(self.assign_fnames)
+        if self.load_in_ram:
+            self.assign_matrices = [
+                h5_to_tensor(os.path.join(self.assign_mat_path, fname)).float().t()
+                    for fname in self.assign_fnames
+            ]
 
     def __getitem__(self, index):
         """
@@ -187,23 +228,24 @@ def make_data_loader(
     return dataloader
 
 # %% original for conducting simple graph neural networks
-def collect_data(bin_path='/workspace/Pathology_Graph/230712_cg_classification/results/centroids_based_graph/cell_graphs/train/*.bin'):
-    l = glob.glob(bin_path)
+def collect_data(bin_path='graph/bin/path/e.g./train/*.bin',target_label=[0,3,6]):
+    l = glob(bin_path)
     data_list = []
     for path in tqdm(l):
         g_list, label_dict = load_graphs(path)
-        edge_info = g_list[0].edges()
-        node_feature = g_list[0].ndata['feat']
-
-        x = torch.tensor(node_feature, dtype=torch.float)
-        edge_index = torch.tensor([np.array(edge_info[0]),np.array(edge_info[1])])
         label = label_dict['label']
-        if int(label) == 6:
-            label = 1
+        if label in target_label:
+            edge_info = g_list[0].edges()
+            node_feature = g_list[0].ndata['feat']
+
+            x = torch.tensor(node_feature, dtype=torch.float)
+            edge_index = torch.tensor([np.array(edge_info[0]),np.array(edge_info[1])])
+
+            new_label = target_label.index(label)
+            d = Data(x=x,edge_index=edge_index.contiguous(),t=new_label)
+            data_list.append(d)
         else:
-            label = 0
-        d = Data(x=x,edge_index=edge_index.contiguous(),t=label)
-        data_list.append(d)
+            pass
     
     return data_list
 
