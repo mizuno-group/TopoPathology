@@ -21,30 +21,30 @@ class Flatten(torch.nn.Module):
         return input.view(input.size(0))
 
 class PNA(torch.nn.Module):
-    def __init__(self, deg, num_class):
+    def __init__(self, deg, num_feature, nhid, num_class):
         super(PNA, self).__init__()
 
         aggregators = ['mean', 'min', 'max', 'std']
         scalers = ['identity', 'amplification', 'attenuation']
         
-        self.conv1 = GCNConv(6, 75)
+        self.conv1 = GCNConv(num_feature, nhid)
 
         self.convs = ModuleList()
         self.batch_norms = ModuleList()
         for _ in range(5):
-            conv = PNAConv(in_channels=75, out_channels=75,
+            conv = PNAConv(in_channels=nhid, out_channels=nhid,
                            aggregators=aggregators, scalers=scalers, deg=deg,
                            towers=1, pre_layers=1, post_layers=1,
                            divide_input=False)
             self.convs.append(conv)
-            self.batch_norms.append(BatchNorm(75))
+            self.batch_norms.append(BatchNorm(nhid))
 
-        self.mlp = Sequential(Linear(75, 50), 
+        self.mlp = Sequential(Linear(nhid, nhid//2), 
                               ReLU(), 
-                              Linear(50, 25), 
+                              Linear(nhid//2, nhid//4), 
                               ReLU(), 
                               Dropout(p=0.2),
-                              Linear(25, num_class))
+                              Linear(nhid//4, num_class))
         
         #self.flatten = Flatten()
 

@@ -97,17 +97,19 @@ class BRACSDataset(Dataset):
         tg_fnames = []
         for p in self.tg_path_list:
             tg_fnames.extend(list(glob(os.path.join(p, '*.bin'))))
+        """
         # grade selection # FIXME: binary classification
         final_tg_fnames = [] 
         for t in tg_fnames:
-            if '_N_' in t:
+            if '_ADH_' in t:
                 final_tg_fnames.append(t)
-            elif '_IC_' in t:
+            elif '_UDH_' in t:
                 final_tg_fnames.append(t)
             else:
                 pass
         self.tg_fnames = sorted(final_tg_fnames)
-
+        """
+        self.tg_fnames = sorted(tg_fnames)
         self.num_tg = len(self.tg_fnames)
         if self.load_in_ram:
             tissue_graphs = [load_graphs(fname) for fname in self.tg_fnames]
