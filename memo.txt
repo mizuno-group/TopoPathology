@@ -10,3 +10,6 @@ pip install  dgl -f https://data.dgl.ai/wheels/cu118/repo.html
 Note that the default is cpu only and cannot send to gpu device.
 You are expected to install the cuda by referring to this link; https://www.dgl.ai/pages/start.html
 Confirm that the pip list command shows the following; dgl    1.1.1+cu118
+
+■ torch-cluster
+pip install torch-cluster -f https://data.pyg.org/whl/torch-2.0.1+cu118.html
