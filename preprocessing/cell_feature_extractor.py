@@ -2,13 +2,14 @@
 """
 Created on 2023-07-11 (Tue) 12:13:51
 
-Cell Feature Extractor.
+Cell Feature Extractor for HoverNet results.
 
 @author: I.Azuma
 """
 #%%
 import json
 import numpy as np
+import pandas as pd
 import scipy.io as sio
 from tqdm import tqdm
 
@@ -34,6 +35,12 @@ class CellFeatureExtractor():
         with open(self.json_path) as json_file:
             data = json.load(json_file)
             self.nuc_info = data['nuc']
+    
+    def display(self):
+        for i in range(self.feature_map.shape[-1]):
+            sns.heatmap(self.feature_map[:,:,i])
+            plt.title('label {}'.format(i))
+            plt.show()
     
     def conduct(self,update_json=True):
         """Extract morphological features (fast algorithm)
@@ -63,6 +70,25 @@ class CellFeatureExtractor():
                 inst_info['node_feature'] = list(node_f) # add node feature information
 
         return node_feature
+    
+    def display_prob_map(self):
+        # cell-level
+        prob_list = []
+        prob_k = []
+        for i,k in enumerate(self.nuc_info):
+            prob_k.append(int(k))
+            p = self.nuc_info[k]['type_prob']
+            prob_list.append(p)
+        cell2p = dict(zip(prob_k, prob_list))
+        p_map = pd.DataFrame(self.inst_map)
+        fxn = lambda x : cell2p.get(x)
+        p_map = p_map.applymap(fxn)
+        sns.heatmap(p_map)
+        plt.show()
+
+        # pixel-level
+        sns.heatmap(np.max(self.feature_map,axis=2))
+        plt.show()
 
     def single_extractor(self,cell=416,remove_contour=True,do_plot=False):
         """ Extract morphological features
@@ -96,14 +122,6 @@ class CellFeatureExtractor():
         # node featue definition
         node_feature = area_feature.mean(axis=0).astype(float) # sum of the feature is corrected to 1
         return node_feature
-    
-    def conduct_legacy(self):
-        """slow"""
-        cell_number = self.inst_map.max()
-        for cell in tqdm(range(1,cell_number+1)):
-            node_feature = self.single_extractor(cell=cell,remove_contour=False,do_plot=False)
-            inst_info = self.nuc_info[str(cell)]
-            inst_info['node_feature'] = list(node_feature) # add node feature information
     
     def savejson(self,save_json_path='/workspace/github/TopoPathology/feature_extractor/results/BRACS_291_IC_20_res.json'):
         with open(save_json_path, "w") as handle:
